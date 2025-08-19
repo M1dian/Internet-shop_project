@@ -1,0 +1,82 @@
+"""
+User serializers for the shop.
+"""
+from rest_framework import serializers
+from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from .models import User
+
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration.
+    """
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+    password_confirm = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'password_confirm', 'first_name', 'last_name']
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError("Пароли не совпадают")
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop('password_confirm')
+        user = User.objects.create_user(**validated_data)
+        return user
+
+
+class UserLoginSerializer(serializers.Serializer):
+    """
+    Serializer for user login.
+    """
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if email and password:
+            user = authenticate(username=email, password=password)
+            if not user:
+                raise serializers.ValidationError('Неверные учетные данные')
+            attrs['user'] = user
+        else:
+            raise serializers.ValidationError('Необходимо указать email и пароль')
+
+        return attrs
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user profile.
+    """
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'balance', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
+class UserBalanceSerializer(serializers.Serializer):
+    """
+    Serializer for adding balance.
+    """
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0.01)
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Сумма должна быть положительной")
+        return value
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating user profile.
+    """
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name'] 
