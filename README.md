@@ -29,8 +29,8 @@ REST API для интернет-магазина, разработанный н
 
 1. Клонируйте репозиторий:
 ```bash
-git clone <your-repo-url>
-cd internet-shop
+git clone https://github.com/M1dian/Internet-shop_project
+cd internet-shop_project
 ```
 
 2. Запустите проект:
